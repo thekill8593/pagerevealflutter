@@ -5,22 +5,33 @@ import 'package:page_reveal/page_dragger.dart';
 import 'package:page_reveal/page_reveal.dart';
 import 'package:page_reveal/pager_indicator.dart';
 import 'package:page_reveal/pages.dart';
+import 'package:page_reveal/pages/create-task.dart';
+import 'package:page_reveal/pages/todo-list.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Page Reveal',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: MyHomePage());
+      theme: ThemeData(
+          primaryColor: Colors.deepPurple[600],
+          accentColor: Colors.deepPurple[600]),
+      routes: {
+        '/': (BuildContext context) => TodoList(),
+        '/createtask': (BuildContext context) => CreateTask()
+      },
+      //home: TodoList(),
+    );
   }
 }
 
-class MyHomePage extends StatefulWidget {
+/*class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
@@ -111,3 +122,4 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     ));
   }
 }
+*/
