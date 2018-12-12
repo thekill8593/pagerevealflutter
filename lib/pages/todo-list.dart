@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
 import 'package:page_reveal/scoped_models/main.dart';
 import 'package:page_reveal/widgets/custom-text.dart';
@@ -7,8 +8,13 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 class TodoList extends StatefulWidget {
   final MainModel model;
+  final FlutterLocalNotificationsPlugin notifications;
+  final Function showNotification;
 
-  TodoList({@required this.model});
+  TodoList(
+      {@required this.model,
+      @required this.notifications,
+      @required this.showNotification});
 
   @override
   _TodoListState createState() => _TodoListState();
@@ -17,8 +23,8 @@ class TodoList extends StatefulWidget {
 class _TodoListState extends State<TodoList> {
   @override
   initState() {
-    widget.model.fetchTasks();
     super.initState();
+    widget.model.fetchTasks();
   }
 
   Widget _buildSideDrawer(BuildContext context) {
@@ -92,38 +98,56 @@ class _TodoListState extends State<TodoList> {
               Padding(
                 padding: EdgeInsets.only(top: 10.0),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Row(
                       children: <Widget>[
                         Row(
                           children: <Widget>[
-                            Icon(Icons.access_time,
-                                size: 20.0, color: Colors.grey[600]),
-                            CustomText(
-                              text: date.hour.toString() +
-                                  ":" +
-                                  date.minute.toString(),
-                              color: Colors.grey[600],
-                              fontSize: 14.0,
+                            Row(
+                              children: <Widget>[
+                                Icon(Icons.access_time,
+                                    size: 20.0, color: Colors.grey[600]),
+                                CustomText(
+                                  text: date.hour.toString() +
+                                      ":" +
+                                      date.minute.toString(),
+                                  color: Colors.grey[600],
+                                  fontSize: 14.0,
+                                )
+                              ],
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 20.0),
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(Icons.calendar_today,
+                                      size: 20.0, color: Colors.grey[600]),
+                                  CustomText(
+                                    text: date.day.toString() +
+                                        "/" +
+                                        date.month.toString() +
+                                        "/" +
+                                        date.year.toString(),
+                                    color: Colors.grey[600],
+                                    fontSize: 14.0,
+                                  )
+                                ],
+                              ),
                             )
                           ],
                         ),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
                         Padding(
-                          padding: EdgeInsets.only(left: 20.0),
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.calendar_today,
-                                  size: 20.0, color: Colors.grey[600]),
-                              CustomText(
-                                text: date.day.toString() +
-                                    "/" +
-                                    date.month.toString() +
-                                    "/" +
-                                    date.year.toString(),
-                                color: Colors.grey[600],
-                                fontSize: 14.0,
-                              )
-                            ],
+                          padding: EdgeInsets.only(right: 15.0),
+                          child: Icon(
+                            task.notifications
+                                ? Icons.notifications
+                                : Icons.notifications_off,
+                            color: Colors.grey[600],
                           ),
                         )
                       ],
@@ -152,7 +176,30 @@ class _TodoListState extends State<TodoList> {
               ? Icons.notifications
               : Icons.notifications_off,
           onTap: () {
-            model.toggleNotifications(task);
+            model.toggleNotifications(task).then((_) async {
+              if ((!task.notifications) == true) {
+                var scheduledNotificationDateTime = DateTime.parse(task.date);
+                var androidPlatformChannelSpecifics =
+                    AndroidNotificationDetails(
+                        'your other channel id',
+                        'your other channel name',
+                        'your other channel description');
+                var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+                NotificationDetails platformChannelSpecifics =
+                    NotificationDetails(androidPlatformChannelSpecifics,
+                        iOSPlatformChannelSpecifics);
+                await widget.showNotification(
+                    task.id,
+                    "New task!!",
+                    task.task,
+                    widget.notifications,
+                    platformChannelSpecifics,
+                    scheduledNotificationDateTime);
+              } else {
+                // cancel the notification with id value of zero
+                await widget.notifications.cancel(task.id);
+              }
+            });
           },
         ),
       ],
@@ -171,7 +218,11 @@ class _TodoListState extends State<TodoList> {
           color: Colors.red,
           icon: Icons.delete,
           onTap: () {
-            model.deleteTask(task);
+            model.deleteTask(task).then((_) async {
+              if (task.notifications) {
+                await widget.notifications.cancel(task.id);
+              }
+            });
           },
         ),
       ],

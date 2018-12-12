@@ -23,8 +23,9 @@ class SqliteDatabase {
     });
   }
 
-  Future<Null> insert(Task task) async {
-    await database.insert("todo", task.toMap());
+  Future<int> insert(Task task) async {
+    int response = await database.insert("todo", task.toMap());
+    return response;
   }
 
   Future<Null> makeFavorite(int taskId, int completed) async {

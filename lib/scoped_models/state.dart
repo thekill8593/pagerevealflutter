@@ -32,9 +32,9 @@ class TaskModel extends MainState {
     notifyListeners();
   }
 
-  Future<Null> insertTask(Task task) async {
+  Future<int> insertTask(Task task) async {
     await database.initDatabase();
-    await database.insert(task);
+    int res = await database.insert(task);
     List<Map> todos = await database.getData();
     final List<Task> listTask = [];
     for (var i = 0; i < todos.length; i++) {
@@ -51,6 +51,7 @@ class TaskModel extends MainState {
 
     _tasks = listTask;
     notifyListeners();
+    return res;
   }
 
   makeTaskFavorite(Task task) async {
@@ -69,7 +70,7 @@ class TaskModel extends MainState {
     _updateTaskUI(updatedTask);
   }
 
-  toggleNotifications(Task task) async {
+  Future<Null> toggleNotifications(Task task) async {
     await database.initDatabase();
     final int notifications = task.notifications ? 0 : 1;
     await database.activateNotifications(task.id, notifications);
@@ -111,7 +112,7 @@ class TaskModel extends MainState {
     _updateTaskUI(task);
   }
 
-  deleteTask(Task task) async {
+  Future<Null> deleteTask(Task task) async {
     await database.initDatabase();
     await database.deleteTask(task.id);
     _deleteTaskFromUI(task);

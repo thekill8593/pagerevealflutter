@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
 import 'package:page_reveal/page_dragger.dart';
 import 'package:page_reveal/page_reveal.dart';
@@ -21,6 +22,44 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final MainModel _model = MainModel();
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  @override
+  void initState() {
+    super.initState();
+
+    var initializationSettingsAndroid =
+        AndroidInitializationSettings("@mipmap/ic_launcher");
+    var initializationSettingsIOS = IOSInitializationSettings();
+    var initializationSettings = InitializationSettings(
+        initializationSettingsAndroid, initializationSettingsIOS);
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
+  }
+
+  Future onSelectNotification(String payload) async {
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+    /*await Navigator.push(
+      context,
+      new MaterialPageRoute(builder: (context) => new SecondScreen(payload)),
+    );*/
+  }
+
+  Future showScheduleNotification(
+      int notificationId,
+      String title,
+      String body,
+      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
+      NotificationDetails platformChannelSpecifics,
+      DateTime scheduledNotificationDateTime) async {
+    await flutterLocalNotificationsPlugin.schedule(notificationId, title, body,
+        scheduledNotificationDateTime, platformChannelSpecifics,
+        payload: 'whatever');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +70,16 @@ class _MyAppState extends State<MyApp> {
             primaryColor: Colors.deepPurple[600],
             accentColor: Colors.deepPurple[600]),
         routes: {
-          '/': (BuildContext context) => TodoList(model: _model),
-          '/createtask': (BuildContext context) => CreateTask(model: _model),
+          '/': (BuildContext context) => TodoList(
+                model: _model,
+                notifications: flutterLocalNotificationsPlugin,
+                showNotification: showScheduleNotification,
+              ),
+          '/createtask': (BuildContext context) => CreateTask(
+                model: _model,
+                notifications: flutterLocalNotificationsPlugin,
+                showNotification: showScheduleNotification,
+              ),
         },
         onGenerateRoute: (RouteSettings settings) {
           final List<String> pathElements = settings.name.split('/');
@@ -48,6 +95,8 @@ class _MyAppState extends State<MyApp> {
               builder: (BuildContext context) => EditTask(
                     task: task,
                     model: _model,
+                    notifications: flutterLocalNotificationsPlugin,
+                    showNotification: showScheduleNotification,
                   ),
             );
           }
@@ -58,6 +107,8 @@ class _MyAppState extends State<MyApp> {
           return MaterialPageRoute(
               builder: (BuildContext context) => CreateTask(
                     model: _model,
+                    notifications: flutterLocalNotificationsPlugin,
+                    showNotification: showScheduleNotification,
                   ));
         },
         //home: TodoList(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
 import 'package:page_reveal/scoped_models/main.dart';
 import 'package:page_reveal/widgets/custom-radio.dart';
@@ -9,8 +10,14 @@ import 'package:page_reveal/widgets/datepicker.dart';
 class EditTask extends StatefulWidget {
   final Task task;
   final MainModel model;
+  final FlutterLocalNotificationsPlugin notifications;
+  final Function showNotification;
 
-  EditTask({@required this.task, @required this.model});
+  EditTask(
+      {@required this.task,
+      @required this.model,
+      @required this.notifications,
+      @required this.showNotification});
 
   @override
   _EditTaskState createState() => _EditTaskState();
@@ -89,7 +96,25 @@ class _EditTaskState extends State<EditTask> {
             time: _fromTime.toString(),
             notifications: _notifications,
             completed: _completed))
-        .then((_) {
+        .then((_) async {
+      await widget.notifications.cancel(_taskId);
+      if (_notifications) {
+        var scheduledNotificationDateTime = validationTime;
+        var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+            'your other channel id',
+            'your other channel name',
+            'your other channel description');
+        var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+        NotificationDetails platformChannelSpecifics = NotificationDetails(
+            androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+        await widget.showNotification(
+            _taskId,
+            "New task!!",
+            _taskText,
+            widget.notifications,
+            platformChannelSpecifics,
+            scheduledNotificationDateTime);
+      }
       _buildAlert(context, "Task modified",
               "Your task has been modified successfully")
           .then((_) {
