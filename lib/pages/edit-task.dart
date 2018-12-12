@@ -6,52 +6,46 @@ import 'package:page_reveal/widgets/custom-text.dart';
 import 'package:page_reveal/widgets/custom-textfield.dart';
 import 'package:page_reveal/widgets/datepicker.dart';
 
-class CreateTask extends StatefulWidget {
+class EditTask extends StatefulWidget {
+  final Task task;
   final MainModel model;
 
-  CreateTask({@required this.model});
+  EditTask({@required this.task, @required this.model});
 
   @override
-  _CreateTaskState createState() => _CreateTaskState();
+  _EditTaskState createState() => _EditTaskState();
 }
 
-class _CreateTaskState extends State<CreateTask> {
-  String _task = "";
-  bool _notifications = false;
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _EditTaskState extends State<EditTask> {
+  int _taskId;
+  String _taskText;
+  bool _notifications;
+  bool _completed;
   DateTime _fromDate = DateTime.now();
-  TimeOfDay _fromTime = TimeOfDay.now();
+  TimeOfDay _fromTime;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  void _submitForm() {
-    if (!_formKey.currentState.validate()) {
-      return;
-    }
-
-    _formKey.currentState.save();
-
-    final DateTime validationTime = DateTime(_fromDate.year, _fromDate.month,
-        _fromDate.day, _fromTime.hour, _fromTime.minute);
-
-    if (validationTime.difference(DateTime.now()).isNegative) {
-      _buildAlert(context, "Error", "Please select a valid date");
-      return;
-    }
-
-    widget.model
-        .insertTask(Task(
-            id: 0,
-            task: _task,
-            date: validationTime.toString(),
-            time: _fromTime.toString(),
-            notifications: _notifications,
-            completed: false))
-        .then((_) {
-      _buildAlert(context, "Task Created",
-              "Your task has been created successfully")
-          .then((_) {
-        Navigator.pop(context);
-      });
+  @override
+  void initState() {
+    super.initState();
+    final Task _task = widget.task;
+    List strTime = splitTimeOfDay(_task.time);
+    setState(() {
+      _taskId = _task.id;
+      _taskText = _task.task;
+      _notifications = _task.notifications;
+      _completed = _task.completed;
+      _fromDate = DateTime.parse(_task.date);
+      _fromTime =
+          TimeOfDay(hour: int.parse(strTime[0]), minute: int.parse(strTime[1]));
     });
+  }
+
+  List splitTimeOfDay(String time) {
+    String _timeString = time;
+    _timeString = _timeString.replaceAll("TimeOfDay(", "");
+    _timeString = _timeString.replaceAll(")", "");
+    return _timeString.split(":");
   }
 
   Future<Widget> _buildAlert(
@@ -72,6 +66,38 @@ class _CreateTaskState extends State<CreateTask> {
         });
   }
 
+  void _submitForm() {
+    if (!_formKey.currentState.validate()) {
+      return;
+    }
+
+    _formKey.currentState.save();
+
+    final DateTime validationTime = DateTime(_fromDate.year, _fromDate.month,
+        _fromDate.day, _fromTime.hour, _fromTime.minute);
+
+    if (validationTime.difference(DateTime.now()).isNegative) {
+      _buildAlert(context, "Error", "Please select a valid date");
+      return;
+    }
+
+    widget.model
+        .updateTask(Task(
+            id: _taskId,
+            task: _taskText,
+            date: validationTime.toString(),
+            time: _fromTime.toString(),
+            notifications: _notifications,
+            completed: _completed))
+        .then((_) {
+      _buildAlert(context, "Task modified",
+              "Your task has been modified successfully")
+          .then((_) {
+        Navigator.pop(context);
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -81,7 +107,7 @@ class _CreateTaskState extends State<CreateTask> {
         child: Scaffold(
           appBar: AppBar(
               title: CustomText(
-            text: "Create Task",
+            text: "Edit Task",
             fontSize: 24.0,
           )),
           body: Container(
@@ -95,6 +121,7 @@ class _CreateTaskState extends State<CreateTask> {
                         EdgeInsets.only(top: 40.0, left: 10.0, right: 10.0),
                     color: Colors.deepPurple,
                     child: CustomTextFormField(
+                      initialValue: _taskText,
                       placeholder: "Remind me to",
                       icon: Icons.access_alarm,
                       helperText: "Type the task you want to be remembered",
@@ -104,7 +131,7 @@ class _CreateTaskState extends State<CreateTask> {
                         }
                       },
                       onSaved: (String value) {
-                        _task = value;
+                        _taskText = value;
                       },
                     ),
                   ),

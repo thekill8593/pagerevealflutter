@@ -6,13 +6,15 @@ class CustomText extends StatelessWidget {
   final Color color;
   final double fontSize;
   final FontWeight fontWeight;
+  final TextDecoration textDecoration;
 
   CustomText(
       {@required this.text,
       this.fontFamily = "LatoRegular",
       this.color = Colors.white,
       this.fontSize = 20.0,
-      this.fontWeight = FontWeight.w400});
+      this.fontWeight = FontWeight.w400,
+      this.textDecoration = TextDecoration.none});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,8 @@ class CustomText extends StatelessWidget {
           fontFamily: fontFamily,
           color: color,
           fontSize: fontSize,
-          fontWeight: fontWeight),
+          fontWeight: fontWeight,
+          decoration: textDecoration),
     );
   }
 }

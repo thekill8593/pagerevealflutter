@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:page_reveal/models/task.dart';
 import 'package:page_reveal/page_dragger.dart';
 import 'package:page_reveal/page_reveal.dart';
 import 'package:page_reveal/pager_indicator.dart';
 import 'package:page_reveal/pages.dart';
 import 'package:page_reveal/pages/create-task.dart';
+import 'package:page_reveal/pages/edit-task.dart';
 import 'package:page_reveal/pages/todo-list.dart';
+import 'package:page_reveal/scoped_models/main.dart';
+import 'package:scoped_model/scoped_model.dart';
 
 void main() => runApp(MyApp());
 
@@ -16,17 +20,48 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final MainModel _model = MainModel();
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-          primaryColor: Colors.deepPurple[600],
-          accentColor: Colors.deepPurple[600]),
-      routes: {
-        '/': (BuildContext context) => TodoList(),
-        '/createtask': (BuildContext context) => CreateTask()
-      },
-      //home: TodoList(),
+    return ScopedModel(
+      model: _model,
+      child: MaterialApp(
+        theme: ThemeData(
+            primaryColor: Colors.deepPurple[600],
+            accentColor: Colors.deepPurple[600]),
+        routes: {
+          '/': (BuildContext context) => TodoList(model: _model),
+          '/createtask': (BuildContext context) => CreateTask(model: _model),
+        },
+        onGenerateRoute: (RouteSettings settings) {
+          final List<String> pathElements = settings.name.split('/');
+          if (pathElements[0] != '') {
+            return null;
+          }
+          if (pathElements[1] == 'editproduct') {
+            final int taskId = int.parse(pathElements[2]);
+            final Task task = _model.tasks.firstWhere((Task task) {
+              return task.id == taskId;
+            });
+            return MaterialPageRoute<bool>(
+              builder: (BuildContext context) => EditTask(
+                    task: task,
+                    model: _model,
+                  ),
+            );
+          }
+          return null;
+        },
+        onUnknownRoute: (RouteSettings settings) {
+          print("enter unknown");
+          return MaterialPageRoute(
+              builder: (BuildContext context) => CreateTask(
+                    model: _model,
+                  ));
+        },
+        //home: TodoList(),
+      ),
     );
   }
 }
