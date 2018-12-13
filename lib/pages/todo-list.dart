@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
+import 'package:page_reveal/notifications/notifications.dart';
 import 'package:page_reveal/scoped_models/main.dart';
 import 'package:page_reveal/widgets/custom-text.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -8,13 +9,9 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 class TodoList extends StatefulWidget {
   final MainModel model;
-  final FlutterLocalNotificationsPlugin notifications;
-  final Function showNotification;
+  final LocalNotification notifications;
 
-  TodoList(
-      {@required this.model,
-      @required this.notifications,
-      @required this.showNotification});
+  TodoList({@required this.model, @required this.notifications});
 
   @override
   _TodoListState createState() => _TodoListState();
@@ -55,7 +52,80 @@ class _TodoListState extends State<TodoList> {
     );
   }
 
-  Widget _buildTaskCard(Task task, MainModel model) {
+  List<Widget> _buildSlidableActions(Task task, MainModel model) {
+    return <Widget>[
+      IconSlideAction(
+        caption: !task.completed ? 'Completed' : 'Not completed',
+        color: !task.completed ? Colors.green : Colors.orange,
+        icon: !task.completed ? Icons.check : Icons.clear,
+        foregroundColor: Colors.white,
+        onTap: () {
+          model.makeTaskFavorite(task);
+        },
+      ),
+      IconSlideAction(
+        caption: 'Notifications',
+        color: Colors.indigo,
+        icon:
+            task.notifications ? Icons.notifications : Icons.notifications_off,
+        onTap: () {
+          model.toggleNotifications(task).then((_) async {
+            if ((!task.notifications) == true) {
+              var scheduledNotificationDateTime = DateTime.parse(task.date);
+              var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+                  'your other channel id',
+                  'your other channel name',
+                  'your other channel description');
+              var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+              NotificationDetails platformChannelSpecifics =
+                  NotificationDetails(androidPlatformChannelSpecifics,
+                      iOSPlatformChannelSpecifics);
+              await widget.notifications.showScheduleNotification(
+                  task.id,
+                  "New task!!",
+                  task.task,
+                  widget.notifications.flutterLocalNotificationsPlugin,
+                  platformChannelSpecifics,
+                  scheduledNotificationDateTime);
+            } else {
+              // cancel the notification with id value of zero
+              await widget.notifications.flutterLocalNotificationsPlugin
+                  .cancel(task.id);
+            }
+          });
+        },
+      ),
+    ];
+  }
+
+  List<Widget> _buildSlidableSecondaryActions(Task task, MainModel model) {
+    return <Widget>[
+      IconSlideAction(
+        caption: 'Edit',
+        color: Colors.deepPurple,
+        icon: Icons.edit,
+        onTap: () {
+          print("edit pressed");
+          Navigator.pushNamed(context, "/editproduct/${task.id}");
+        },
+      ),
+      IconSlideAction(
+        caption: 'Delete',
+        color: Colors.red,
+        icon: Icons.delete,
+        onTap: () {
+          model.deleteTask(task).then((_) async {
+            if (task.notifications) {
+              await widget.notifications.flutterLocalNotificationsPlugin
+                  .cancel(task.id);
+            }
+          });
+        },
+      ),
+    ];
+  }
+
+  Widget _buildTaskSlidable(Task task, MainModel model) {
     //final TimeOfDay time = TimeOfDay.;
     final DateTime date = DateTime.parse(task.date);
 
@@ -159,73 +229,8 @@ class _TodoListState extends State<TodoList> {
           ),
         ),
       ),
-      actions: <Widget>[
-        IconSlideAction(
-          caption: !task.completed ? 'Completed' : 'Not completed',
-          color: !task.completed ? Colors.green : Colors.orange,
-          icon: !task.completed ? Icons.check : Icons.clear,
-          foregroundColor: Colors.white,
-          onTap: () {
-            model.makeTaskFavorite(task);
-          },
-        ),
-        IconSlideAction(
-          caption: 'Notifications',
-          color: Colors.indigo,
-          icon: task.notifications
-              ? Icons.notifications
-              : Icons.notifications_off,
-          onTap: () {
-            model.toggleNotifications(task).then((_) async {
-              if ((!task.notifications) == true) {
-                var scheduledNotificationDateTime = DateTime.parse(task.date);
-                var androidPlatformChannelSpecifics =
-                    AndroidNotificationDetails(
-                        'your other channel id',
-                        'your other channel name',
-                        'your other channel description');
-                var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-                NotificationDetails platformChannelSpecifics =
-                    NotificationDetails(androidPlatformChannelSpecifics,
-                        iOSPlatformChannelSpecifics);
-                await widget.showNotification(
-                    task.id,
-                    "New task!!",
-                    task.task,
-                    widget.notifications,
-                    platformChannelSpecifics,
-                    scheduledNotificationDateTime);
-              } else {
-                // cancel the notification with id value of zero
-                await widget.notifications.cancel(task.id);
-              }
-            });
-          },
-        ),
-      ],
-      secondaryActions: <Widget>[
-        IconSlideAction(
-          caption: 'Edit',
-          color: Colors.deepPurple,
-          icon: Icons.edit,
-          onTap: () {
-            print("edit pressed");
-            Navigator.pushNamed(context, "/editproduct/${task.id}");
-          },
-        ),
-        IconSlideAction(
-          caption: 'Delete',
-          color: Colors.red,
-          icon: Icons.delete,
-          onTap: () {
-            model.deleteTask(task).then((_) async {
-              if (task.notifications) {
-                await widget.notifications.cancel(task.id);
-              }
-            });
-          },
-        ),
-      ],
+      actions: _buildSlidableActions(task, model),
+      secondaryActions: _buildSlidableSecondaryActions(task, model),
     );
   }
 
@@ -236,7 +241,7 @@ class _TodoListState extends State<TodoList> {
         itemBuilder: (BuildContext context, int index) {
           return ScopedModelDescendant<MainModel>(
             builder: (BuildContext context, Widget widget, MainModel model) {
-              return Container(child: _buildTaskCard(tasks[index], model));
+              return Container(child: _buildTaskSlidable(tasks[index], model));
             },
           );
         },

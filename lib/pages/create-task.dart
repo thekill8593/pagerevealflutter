@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
+import 'package:page_reveal/notifications/notifications.dart';
 import 'package:page_reveal/scoped_models/main.dart';
 import 'package:page_reveal/widgets/custom-radio.dart';
 import 'package:page_reveal/widgets/custom-text.dart';
@@ -9,13 +10,12 @@ import 'package:page_reveal/widgets/datepicker.dart';
 
 class CreateTask extends StatefulWidget {
   final MainModel model;
-  final FlutterLocalNotificationsPlugin notifications;
-  final Function showNotification;
+  final LocalNotification notifications;
 
-  CreateTask(
-      {@required this.model,
-      @required this.notifications,
-      @required this.showNotification});
+  CreateTask({
+    @required this.model,
+    @required this.notifications,
+  });
 
   @override
   _CreateTaskState createState() => _CreateTaskState();
@@ -62,11 +62,11 @@ class _CreateTaskState extends State<CreateTask> {
         var iOSPlatformChannelSpecifics = IOSNotificationDetails();
         NotificationDetails platformChannelSpecifics = NotificationDetails(
             androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-        widget.showNotification(
+        widget.notifications.showScheduleNotification(
             taskId,
             "New task!!",
             _task,
-            widget.notifications,
+            widget.notifications.flutterLocalNotificationsPlugin,
             platformChannelSpecifics,
             scheduledNotificationDateTime);
       }

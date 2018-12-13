@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:page_reveal/models/task.dart';
+import 'package:page_reveal/notifications/notifications.dart';
 import 'package:page_reveal/scoped_models/main.dart';
 import 'package:page_reveal/widgets/custom-radio.dart';
 import 'package:page_reveal/widgets/custom-text.dart';
@@ -10,14 +11,13 @@ import 'package:page_reveal/widgets/datepicker.dart';
 class EditTask extends StatefulWidget {
   final Task task;
   final MainModel model;
-  final FlutterLocalNotificationsPlugin notifications;
-  final Function showNotification;
+  final LocalNotification notifications;
 
-  EditTask(
-      {@required this.task,
-      @required this.model,
-      @required this.notifications,
-      @required this.showNotification});
+  EditTask({
+    @required this.task,
+    @required this.model,
+    @required this.notifications,
+  });
 
   @override
   _EditTaskState createState() => _EditTaskState();
@@ -97,7 +97,8 @@ class _EditTaskState extends State<EditTask> {
             notifications: _notifications,
             completed: _completed))
         .then((_) async {
-      await widget.notifications.cancel(_taskId);
+      await widget.notifications.flutterLocalNotificationsPlugin
+          .cancel(_taskId);
       if (_notifications) {
         var scheduledNotificationDateTime = validationTime;
         var androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -107,11 +108,11 @@ class _EditTaskState extends State<EditTask> {
         var iOSPlatformChannelSpecifics = IOSNotificationDetails();
         NotificationDetails platformChannelSpecifics = NotificationDetails(
             androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-        await widget.showNotification(
+        await widget.notifications.showScheduleNotification(
             _taskId,
             "New task!!",
             _taskText,
-            widget.notifications,
+            widget.notifications.flutterLocalNotificationsPlugin,
             platformChannelSpecifics,
             scheduledNotificationDateTime);
       }
